@@ -1,0 +1,8 @@
+streamlit
+scikit-learn
+pandas
+joblib
+pillow
+pytesseract
+pytest
+ipykernel
