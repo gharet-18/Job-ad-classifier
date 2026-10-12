@@ -1,0 +1,93 @@
+#Shared logic: rules, scoring, redaction, OCR.
+import re
+from pathlib import Path
+
+import joblib
+
+BASE_DIR = Path(__file__).resolve().parent
+DATA_DIR = BASE_DIR / "data"
+MODEL_PATH = BASE_DIR / "models" / "scam_model.joblib"
+
+# (label, points, regex)
+RULES = [
+    ("Upfront fee requested", 40,
+     r"\b(registration|training|activation|processing|application|admin)\s+(fee|money)\b"
+     r"|pay\s+(a\s+)?(fee|deposit)|send\s+(money|payment)"),
+    ("Asks for ID/bank details early", 30,
+     r"\b(bvn|nin|bank\s+details|account\s+number|atm\s+pin|otp|passport|id\s+card)\b"),
+    ("WhatsApp/Telegram-only contact", 20,
+     r"\b(whatsapp|telegram)\b"),
+    ("Urgency / pressure", 15,
+     r"limited\s+slots?|apply\s+now|act\s+fast|hurry|today\s+only|last\s+chance|pay\s+now"),
+    ("Unrealistic pay / easy work", 25,
+     r"(earn|make|get)\s+[\$₦#]?\s?\d[\d,]*\s*(k|usd|dollars|naira)?\s*(/|per\s+)?(day|daily|hour|week)"
+     r"|no\s+experience|easy\s+(money|task|work)|playing\s+games|(like|liking)\s+videos"
+     r"|guaranteed\s+(income|results|job)|earn\s+before"),
+    ("Pidgin / local scam phrases", 25,
+     r"pay\s+small\s+money|e\s+go\s+pay\s+you|double\s+your\s+money"
+     r"|inbox\s+me|dm\s+me|dm\s+to\s+join|click\s+(the\s+)?link\s+in\s+(my\s+)?bio"
+     r"|join\s+our\s+(whatsapp|telegram)\s+group|send\s+am\s+now"),
+    ("Free email address", 15,
+     r"[\w.]+@(gmail|yahoo|outlook|hotmail)\.com"),
+]
+
+SCAM_THRESHOLD = 60
+SUSPICIOUS_THRESHOLD = 25
+
+_model = None
+_model_checked = False
+
+
+def load_model():
+    #Load the trained ML model once. Returns None if it hasn't been trained.
+    global _model, _model_checked
+    if not _model_checked:
+        _model_checked = True
+        if MODEL_PATH.exists():
+            _model = joblib.load(MODEL_PATH)
+    return _model
+
+
+def analyze(text):
+    #Rule-based scan. Returns (score 0-100, flags, spans).
+    score, flags, spans = 0, [], []
+    for label, points, pattern in RULES:
+        matches = list(re.finditer(pattern, text, re.IGNORECASE))
+        if matches:
+            score += points
+            flags.append((label, points, [m.group(0) for m in matches]))
+            spans += [(m.start(), m.end()) for m in matches]
+    return min(score, 100), flags, spans
+
+
+def combined_score(text, rule_score):
+    #Blend rule score (60%) with ML score (40%). Falls back to rules only.
+    model = load_model()
+    if model is None:
+        return rule_score, None
+    ml = model.predict_proba([text])[0][1] * 100
+    return round(0.6 * rule_score + 0.4 * ml), round(ml)
+
+
+def verdict(score):
+    if score >= SCAM_THRESHOLD:
+        return "scam"
+    if score >= SUSPICIOUS_THRESHOLD:
+        return "suspicious"
+    return "ok"
+
+
+def redact(text):
+    #Remove emails and phone numbers before anything is saved.
+    text = re.sub(r"[\w.]+@[\w.]+\.\w+", "[EMAIL]", text)
+    text = re.sub(r"\+?\d[\d\s-]{8,}\d", "[PHONE]", text)
+    return text
+
+
+def read_image_text(img):
+    #OCR an image. Returns '' if Tesseract is missing or nothing is readable.
+    try:
+        import pytesseract
+        return pytesseract.image_to_string(img).strip()
+    except Exception:
+        return ""
