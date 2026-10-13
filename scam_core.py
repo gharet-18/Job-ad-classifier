@@ -18,14 +18,16 @@ RULES = [
     ("WhatsApp/Telegram-only contact", 20,
      r"\b(whatsapp|telegram)\b"),
     ("Urgency / pressure", 15,
-     r"limited\s+slots?|apply\s+now|act\s+fast|hurry|today\s+only|last\s+chance|pay\s+now"),
+     r"limited\s+slots?|apply\s+now|act\s+fast|hurry|today\s+only|last\s+chance|pay\s+now"
+     r"|(slots?|spots?)\s+(are\s+)?(filling|going)\s+(up\s+)?fast|filling\s+fast"),
     ("Unrealistic pay / easy work", 25,
      r"(earn|make|get)\s+[\$₦#]?\s?\d[\d,]*\s*(k|usd|dollars|naira)?\s*(/|per\s+)?(day|daily|hour|week)"
      r"|no\s+experience|easy\s+(money|task|work)|playing\s+games|(like|liking)\s+videos"
      r"|guaranteed\s+(income|results|job)|earn\s+before"),
-    ("Pidgin / local scam phrases", 25,
+    ("Pidgin / DM-bait phrases", 25,
      r"pay\s+small\s+money|e\s+go\s+pay\s+you|double\s+your\s+money"
      r"|inbox\s+me|dm\s+me|dm\s+to\s+join|click\s+(the\s+)?link\s+in\s+(my\s+)?bio"
+     r"|dm\s+[\"“”']?\w+[\"“”']?\s+to\s+(join|start|begin)"
      r"|join\s+our\s+(whatsapp|telegram)\s+group|send\s+am\s+now"),
     ("Free email address", 15,
      r"[\w.]+@(gmail|yahoo|outlook|hotmail)\.com"),
