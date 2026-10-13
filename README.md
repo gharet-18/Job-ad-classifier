@@ -6,8 +6,6 @@ AdVerify helps people check job and "digital skills" ads, especially the ones sp
 
 Many scam ads look polished and contain no obvious red flags in the ad itself. The warning signs show up later: an upfront fee, a guaranteed-income promise, a WhatsApp-only contact, or a business that can't be found anywhere else. So this project doesn't only score text. It also guides people through verifying the business.
 
-![App screenshot](docs/screenshot.png)
-
 ## Features
 - **Verification checklist:** 7 questions about what the ad hides (fees, income promises, contact method, whether the business can be verified). Works on any ad, including polished ones.
 - **Text scanner:** paste a caption, comments, or landing-page text. It scores the text and highlights the phrases behind each red flag.
