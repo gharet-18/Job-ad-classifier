@@ -85,7 +85,7 @@ def render_result(text):
 
 st.set_page_config(page_title="AdVerify", page_icon="🛡️")
 st.title("🛡️AdVerify")
-st.caption("Seen a job or 'skills' ad on TikTok? Check it before you pay or share details.")
+st.caption("Seen a job or 'skills' ad on TikTok or any social platform? Check it before you pay or share details.")
 
 tab_check, tab_text, tab_img = st.tabs(["✅ Checklist", "📝 Scan text", "📷 Screenshot"])
 
