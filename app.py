@@ -124,7 +124,7 @@ with tab_text:
 with tab_img:
     st.write("Upload a screenshot of the ad. Include the caption or comments if you can.")
     img_file = st.file_uploader("Screenshot", type=["png", "jpg", "jpeg"])
-  if shutil.which("tesseract") is None:
+    if shutil.which("tesseract") is None:
         st.error("Tesseract is not installed on this server, so screenshots can't be read.")
     if img_file is not None:
         image = Image.open(img_file)
