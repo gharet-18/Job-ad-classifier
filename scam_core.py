@@ -85,9 +85,12 @@ def redact(text):
 
 
 def read_image_text(img):
-    #OCR an image. Returns '' if Tesseract is missing or nothing is readable.
+    """OCR an image. Returns '' if Tesseract is missing or nothing is readable."""
     try:
         import pytesseract
-        return pytesseract.image_to_string(img).strip()
+        from PIL import ImageOps
+        gray = ImageOps.grayscale(img.convert("RGB"))
+        gray = gray.resize((gray.width * 2, gray.height * 2))
+        return pytesseract.image_to_string(gray).strip()
     except Exception:
         return ""
