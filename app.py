@@ -83,7 +83,7 @@ def render_result(text):
 
 
 st.set_page_config(page_title="Scam Ad Checker", page_icon="🛡️")
-st.title("🛡️ Scam Ad Checker")
+st.title("🛡️ Scam AdVerify")
 st.caption("Seen a job or 'skills' ad on TikTok? Check it before you pay or share details.")
 
 tab_check, tab_text, tab_img = st.tabs(["✅ Checklist", "📝 Scan text", "📷 Screenshot"])
