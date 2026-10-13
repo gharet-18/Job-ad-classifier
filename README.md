@@ -1,6 +1,8 @@
-# 🛡️ Scam Ad Checker
+# 🛡️ AdVerify
 
-A tool that helps people check job and "digital skills" ads, especially the ones spread on TikTok, before they pay or share personal details.
+**Live demo:** https://job-ad-classifier-kxugnzql4lwi2cpayfttty.streamlit.app/
+
+AdVerify helps people check job and "digital skills" ads, especially the ones spread on TikTok, before they pay or share personal details.
 
 Many scam ads look polished and contain no obvious red flags in the ad itself. The warning signs show up later: an upfront fee, a guaranteed-income promise, a WhatsApp-only contact, or a business that can't be found anywhere else. So this project doesn't only score text. It also guides people through verifying the business.
 
