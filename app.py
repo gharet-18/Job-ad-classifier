@@ -1,14 +1,16 @@
 import csv
+import os
 import shutil
+import tempfile
 from datetime import date
 
 import streamlit as st
 from PIL import Image
 
 from scam_core import (DATA_DIR, analyze, combined_score, read_image_text,
-                       redact, verdict)
+                       read_video_text, redact, verdict)
 
-DATASET_FILE = DATA_DIR / "fake_job_postings.csv"
+DATASET_FILE = DATA_DIR / "scam_dataset.csv"
 
 QUESTIONS = [
     ("They ask for money before you start (fee, kit, registration)", 35),
@@ -18,6 +20,14 @@ QUESTIONS = [
     ("Contact is only through WhatsApp, Telegram, or DMs", 15),
     ("I'm being pressured to decide fast (limited slots, countdown)", 15),
     ("The only testimonials are on their own page or screenshots", 10),
+]
+
+GAME_QUESTIONS = [
+    ("I must pay or deposit before I can withdraw my winnings", 40),
+    ("The withdrawal minimum is very high, or my balance never reaches it", 25),
+    ("I must invite friends or recruit people to earn or withdraw", 20),
+    ("The game is only available through a link or APK, not the official app store", 20),
+    ("The 'payment proof' and reviews are only screenshots or videos from the game's own page", 15),
 ]
 
 
@@ -46,13 +56,21 @@ def save_example(text, label):
         writer.writerow([redact(text), label, date.today().isoformat()])
 
 
+def show_disclaimer():
+    st.warning(
+        "**⚠️ This is not a guarantee.** A low score does not mean an ad is safe, "
+        "and a high score does not prove it is a scam. "
+        "Always check the business yourself before you pay or share any details."
+    )
+
+
 def show_next_steps():
     st.subheader("What to do next")
     st.markdown(
         "- Never pay to get a job or start earning\n"
         "- Check the business on its official website, CAC search, and independent reviews\n"
         "- Don't share BVN, ID, or bank details before a verified offer\n"
-        "- Report the suspicious ad on TikTok (Share > Report)"
+        "- Report the ad on TikTok (Share > Report)"
     )
 
 
@@ -70,6 +88,7 @@ def render_result(text):
             f"No strong red flags in this text ({s}/100). That doesn't mean it's safe. "
             "Use the Checklist tab to verify the business."
         )
+    show_disclaimer()
     if ml is not None:
         st.caption(f"Rule score: {rule_s} · ML score: {ml}")
     else:
@@ -84,10 +103,12 @@ def render_result(text):
 
 
 st.set_page_config(page_title="AdVerify", page_icon="🛡️")
-st.title("🛡️AdVerify")
-st.caption("Seen a job or 'skills' ad on TikTok or any social platform? Check it before you pay or share details.")
+st.title("🛡️ AdVerify")
+st.caption("Seen a job or 'skills' ad on TikTok? Check it before you pay or share details.")
 
-tab_check, tab_text, tab_img = st.tabs(["✅ Checklist", "📝 Scan text", "📷 Screenshot"])
+tab_check, tab_text, tab_img, tab_vid = st.tabs(
+    ["✅ Checklist", "📝 Scan text", "📷 Screenshot", "🎮 Video"]
+)
 
 with tab_check:
     st.write("Tick everything that applies to the ad or the page it leads to.")
@@ -107,6 +128,7 @@ with tab_check:
                 f"🔍 Few warning signs ({score}/100). That doesn't prove it's safe. "
                 "Confirm the business exists and read independent reviews before paying."
             )
+        show_disclaimer()
         if ticked:
             st.subheader("Warning signs you found")
             for question in ticked:
@@ -123,10 +145,10 @@ with tab_text:
             st.warning("Paste some text first.")
 
 with tab_img:
-    st.write("Upload a screenshot of the ad. Include the caption or comments if you can.")
-    img_file = st.file_uploader("Screenshot", type=["png", "jpg", "jpeg"])
+    st.write("Works best on screenshots with large, clear text. Include the caption or comments if you can.")
     if shutil.which("tesseract") is None:
         st.error("Tesseract is not installed on this server, so screenshots can't be read.")
+    img_file = st.file_uploader("Screenshot", type=["png", "jpg", "jpeg"])
     if img_file is not None:
         image = Image.open(img_file)
         st.image(image, use_container_width=True)
@@ -141,6 +163,46 @@ with tab_img:
                 with st.expander("Text read from image"):
                     st.write(extracted)
                 render_result(extracted)
+
+with tab_vid:
+    st.write("Upload a short screen recording of the game ad. Under 60 seconds works best.")
+    video = st.file_uploader("Video", type=["mp4", "mov", "webm"])
+    if video is not None:
+        if video.size > 50 * 1024 * 1024:
+            st.warning("That video is over 50 MB. Try a shorter clip.")
+        else:
+            st.video(video)
+            if st.button("Read and scan video", type="primary", key="vid"):
+                with tempfile.NamedTemporaryFile(delete=False, suffix=".mp4") as tmp:
+                    tmp.write(video.getbuffer())
+                    path = tmp.name
+                with st.spinner("Reading the video..."):
+                    extracted = read_video_text(path)
+                os.remove(path)
+                if not extracted:
+                    st.warning("Couldn't read any on-screen text. Try a clearer clip or paste the text.")
+                else:
+                    with st.expander("Text read from video"):
+                        st.write(extracted)
+                    render_result(extracted)
+
+    st.subheader("🎮 Game-money checks")
+    st.write("Tick what applies once you look at the withdrawal rules.")
+    gscore, gticked = 0, []
+    for i, (question, pts) in enumerate(GAME_QUESTIONS):
+        if st.checkbox(question, key=f"g{i}"):
+            gscore += pts
+            gticked.append(question)
+    if st.button("Get game verdict", key="gverdict"):
+        gscore = min(gscore, 100)
+        if gscore >= 40:
+            st.error(f"🚨 High risk ({gscore}/100). Don't deposit money or share your details.")
+        elif gscore >= 20:
+            st.warning(f"⚠️ Be careful ({gscore}/100). Test the withdrawal before putting in anything.")
+        else:
+            st.info(f"🔍 Few warning signs ({gscore}/100). That doesn't prove it's safe.")
+        show_disclaimer()
+        st.markdown("- Never pay to unlock a withdrawal\n- Only install games from the official app store")
 
 st.divider()
 with st.expander("🧠 Help improve this tool"):
