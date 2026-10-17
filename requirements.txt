@@ -6,3 +6,4 @@ pillow
 pytesseract
 pytest
 ipykernel
+opencv-python-headless
